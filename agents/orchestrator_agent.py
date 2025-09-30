@@ -30,16 +30,16 @@ class OrchetratorAgent(BaseAgent):
                 if not docs:
                     logger.warning(f"no documents retrieved for summarization.")
                     return "no documents available to summarize"
-                result = await self.summarizer_agent.run(docs[0])
+                result = await self.summarizer_agent.run(docs[0], stream=True)
                 logger.info("SummarizerAgent completed successfully")
                 return result
-            elif "classifier" in query.lower():
+            elif "classify" in query.lower():
                 logger.debug("routing query to ClassifierAgent")
                 docs = await self.retriever_agent.run(query)
                 if not docs:
                     logger.warning(f"no documents retrieved for classification.")
                     return "no documents available to classify"
-                result = await self.classifier_agent.run(docs[0])
+                result = await self.classifier_agent.run(docs[0], stream=True)
                 logger.info("ClassifierAgent completed successfully")
                 return result
             else:
