@@ -1,0 +1,11 @@
+**__pycache__
+
+db_store
+logs
+noidea
+papers_arxiv
+papers_text
+test
+
+agents/rag_agent.py
+corpus_loader.py
