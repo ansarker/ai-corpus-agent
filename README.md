@@ -77,11 +77,11 @@ python3 -m cli chat
 #### Example
 ```bash
 # Build index from a research papers directory
-python main.py build -p ./corpus/papers
+python3 -m cli build -p ./corpus/papers
 
 # Ask a single query
-python main.py query -q "Summarize the methods section of the corpus"
+python3 -m cli query -q "Summarize the methods section of the corpus"
 
 # Start an interactive chat session
-python main.py chat
+python3 -m cli chat
 ```
