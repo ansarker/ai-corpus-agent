@@ -18,7 +18,7 @@ It is built around LangChain and Ollama model, and allows multi-turn, query-driv
 
 1. **Clone the repo**
     ```bash
-    git clone https://github.com/yourname/ai-corpus-agent.git
+    git clone https://github.com/ansarker/ai-corpus-agent.git
     cd ai-corpus-agent
     ```
 2. **Create and activate a virtual environment**
@@ -33,3 +33,55 @@ It is built around LangChain and Ollama model, and allows multi-turn, query-driv
     pip install -r requirements.txt
     ```
     Note: `requirements.txt` is empty 😑
+
+
+### Usage
+
+#### CLI
+
+All commands are run from the project root with:
+```bash
+python main.py <command> [options]
+```
+
+#### Build vector database
+Builds a persistent vector database from a directory of documents (books, papers, etc.).
+```bash
+python main.py build -p ./data/books
+```
+**Options:**
+
+* `-p`, `--path` (**required**) → Path to directory containing `.pdf`, `.txt`, `.md`, or other supported files.
+
+#### Single Query Mode
+
+Run a one-off query against the knowledge base.
+```bash
+python main.py query -q "What are the key takeaways from Atomic Habits?"
+```
+
+**Options:**
+
+`-q`, `--query` (**required**) → The question or query to run.
+
+#### Interactive Chat Mode
+Start a conversational session with the AI (multi-turn dialogue).
+```bash
+python main.py chat
+```
+**Behavior:**
+* Starts a streaming chat loop.
+* Type your questions one by one.
+* Use `Ctrl+C` or type `exit`, `quit` to exit.
+
+#### Example
+```bash
+# Build index from a research papers directory
+python main.py build -p ./corpus/papers
+
+# Ask a single query
+python main.py query -q "Summarize the methods section of the corpus"
+
+# Start an interactive chat session
+python main.py chat
+```

@@ -3,11 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.websockets import WebSocket
 from contextlib import asynccontextmanager
 import json, uuid
-import asyncio
 from typing import Optional
 from langchain_chroma import Chroma
 from langchain_ollama import ChatOllama
-
 
 from agents.embedding_agent import EmbeddingAgent
 from agents.orchestrator_agent import OrchetratorAgent

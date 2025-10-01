@@ -1,3 +1,4 @@
+import os
 import logging
 from pathlib import Path
 
@@ -9,6 +10,11 @@ def get_logger(name: str = "arxiv_pipeline", log_file: str = "pipeline.log") -> 
     :param log_file: Path to log file
     :return: Configured logger instance
     """
+    # Ensure the log directory exists
+    log_dir = os.path.dirname(log_file)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir, exist_ok=True)
+    
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
