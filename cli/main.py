@@ -7,8 +7,8 @@ from agents.orchestrator_agent import OrchetratorAgent
 from utils.llm_factory import make_llm
 
 
-async def build_index(args):
-    pdf_dir = Path(args.path)
+async def build_index(path: str):
+    pdf_dir = Path(path)
     ingestion = IngestionAgent(pdf_dir=pdf_dir)
     embedding = EmbeddingAgent(persist_dir="db_store", model_name="nomic-embed-text")
 
@@ -16,7 +16,7 @@ async def build_index(args):
     vector_db = await embedding.run(documents=documents, collection_name="corpus_db", overwrite=True)
     return vector_db
 
-async def query_pipeline(args):
+async def query_pipeline(query: str):
     embedding = EmbeddingAgent(persist_dir="db_store", model_name="nomic-embed-text")
     
     # Check available collections
@@ -27,7 +27,7 @@ async def query_pipeline(args):
     llm = make_llm("gemma3", temperature=0.7)
 
     orchestrator = OrchetratorAgent(vector_db=vector_db, llm=llm)
-    answer = await orchestrator.run(query=args.query)
+    answer = await orchestrator.run(query=query)
     print("Response:\n" + answer["content"].strip())
 
 async def chat():
@@ -57,7 +57,7 @@ async def chat():
             print(chunk["content"], end="", flush=True)
 
 def init_parser() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="AI Corpus Agent Runner")
+    parser = argparse.ArgumentParser(description="AI Corpus Agent CLI - Manage vector DB, run queries, and chat")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # === Build command ===
@@ -69,19 +69,18 @@ def init_parser() -> argparse.Namespace:
     query_parser.add_argument("-q", "--query", required=True, help="Query string to run")
 
     # === Chat command ===
-    chat_parser = subparsers.add_parser("chat", help="Start interactive chat")
+    subparsers.add_parser("chat", help="Start interactive chat")
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 def main():
     args = init_parser()
     
     # === Dispatch ===
     if args.command == "build":
-        asyncio.run(build_index(args))
+        asyncio.run(build_index(args.path))
     elif args.command == "query":
-        asyncio.run(query_pipeline(args))
+        asyncio.run(query_pipeline(args.query))
     elif args.command == "chat":
         asyncio.run(chat())
     else:

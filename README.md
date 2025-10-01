@@ -41,13 +41,13 @@ It is built around LangChain and Ollama model, and allows multi-turn, query-driv
 
 All commands are run from the project root with:
 ```bash
-python main.py <command> [options]
+python3 -m cli <command> [options]
 ```
 
 #### Build vector database
 Builds a persistent vector database from a directory of documents (books, papers, etc.).
 ```bash
-python main.py build -p ./data/books
+python3 -m cli build -p ./data/books
 ```
 **Options:**
 
@@ -57,7 +57,7 @@ python main.py build -p ./data/books
 
 Run a one-off query against the knowledge base.
 ```bash
-python main.py query -q "What are the key takeaways from Atomic Habits?"
+python3 -m cli query -q "What are the key takeaways from Atomic Habits?"
 ```
 
 **Options:**
@@ -67,7 +67,7 @@ python main.py query -q "What are the key takeaways from Atomic Habits?"
 #### Interactive Chat Mode
 Start a conversational session with the AI (multi-turn dialogue).
 ```bash
-python main.py chat
+python3 -m cli chat
 ```
 **Behavior:**
 * Starts a streaming chat loop.
