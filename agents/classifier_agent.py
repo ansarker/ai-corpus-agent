@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+from langchain_ollama import ChatOllama
 from utils.logger import get_logger
 from .base_agent import BaseAgent
 
@@ -5,7 +7,7 @@ from .base_agent import BaseAgent
 logger = get_logger(name="classifier_agent", log_file="logs/classifier_agent.log")
 
 class ClassifierAgent(BaseAgent):
-    def __init__(self, llm):
+    def __init__(self, llm: ChatOllama):
         super().__init__(
             name="ClassifierAgent", 
             instructions="Classifies papers into disciplines"
@@ -45,9 +47,8 @@ class ClassifierAgent(BaseAgent):
             "Other"
         ]
 
-    async def run(self, document, stream: bool = False):
-        logger.info(f"starting classification for document with metadata: {document.metadata}")
-
+    async def run(self, document) -> dict:
+        logger.info(f"[RUN] starting classification for document with metadata: {document.metadata}")
         prompt = f"""
         You are a research paper classifier.
         Task:
@@ -65,19 +66,35 @@ class ClassifierAgent(BaseAgent):
         {document.page_content[:1000]}
         """
         try:
-            if stream:
-                logger.info(f"streaming classification response...")
-                classification = ""
-                async for chunk in self.llm.astream(prompt):
-                    print(chunk.content, end="", flush=True)
-                    classification += chunk.content
-                print()
-            else:
-                logger.info("invoking LLM for classification...")
-                classification = await self.llm.ainvoke(prompt)
-
-            logger.info(f"classification done")
-            return classification
+            classification = await self.llm.ainvoke(prompt)
+            logger.info(f"[RUN] classification done")
+            return {"type": "classification", "content": classification.content, "metadata": classification.response_metadata}
         except Exception as e:
-            logger.error(f"classification failed: {e}")
-            return {"discipline": "Other"}
+            logger.error(f"[RUN] classification failed: {e}")
+            return {"type": "classification", "content": "Other", "metadata": {"allowed_labels": self.allowed_labels}}
+
+    async def stream(self, document) -> AsyncGenerator[dict, None]:
+        logger.info(f"[STREAM] starting classification for document with metadata: {document.metadata}")
+        prompt = f"""
+        You are a research paper classifier.
+        Task:
+        - Assign the MOST relevant discipline(s) from the list below.
+        - If multiple apply, choose the most specific one.
+        - If unsure, use "Other".
+        
+        Allowed categories:
+        {", ".join(self.allowed_labels)}
+
+        Output strictly in JSON format:
+        {{"discipline": "chosen category"}}
+
+        Document (first 1000 chars shown):
+        {document.page_content[:1000]}
+        """
+        try:
+            async for chunk in self.llm.astream(prompt):
+                yield {"type": "classification", "content": chunk.content, "metadata": {"allowed_labels": self.allowed_labels}}
+            logger.info(f"[STREAM] classification done")
+        except Exception as e:
+            logger.error(f"[STREAM] classification failed: {e}")
+            yield {"type": "classification", "content": "Other", "metadata": {"allowed_labels": self.allowed_labels}}

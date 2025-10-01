@@ -55,10 +55,15 @@ async def chat():
         history.append({"role": "user", "content": user_input})
 
         query = user_input
-        answer = await orchestrator.run(query=query)
+        # [RUN]
+        # answer = await orchestrator.run(query=query)
+        # print("Assistant:\n", answer)
+        # history.append({"role": "assistant", "content": answer})
 
-        print("Assistant:\n", answer)
-        history.append({"role": "assistant", "content": answer})
+        # [STREAM]
+        async for chunk in orchestrator.stream(query):
+            print(chunk["content"], end="", flush=True)
+
 
 if __name__ == "__main__":
     # asyncio.run(build_index()) # run only once

@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any
 from langchain_core.runnables import Runnable
 
 from utils.retriever_factory import make_retriever
@@ -17,7 +18,7 @@ class RetrieverAgent(BaseAgent):
         self.retriever = make_retriever(vector_db=vector_db, llm=llm)
         logger.info("RetrieverAgent initialized with provided vector db and language model")
     
-    async def run(self, query: str, k: int = 5):
+    async def run(self, query: str, k: int = 5) -> list[Any]:
         logger.info(f"RetrieverAgent received query: '{query}' with top_k={k}")
         try:
             docs = self.retriever.get_relevant_documents(query)

@@ -5,7 +5,7 @@ logs
 noidea
 papers_arxiv
 papers_text
-test
+books
 
 agents/rag_agent.py
 corpus_loader.py

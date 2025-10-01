@@ -1,7 +1,9 @@
+from typing import AsyncGenerator, Union, Dict, List, Any
+
 from .base_agent import BaseAgent
 from .retriever_agent import RetrieverAgent
 from .response_agent import ResponseAgent
-from .summerizer_agent import SummarizerAgent
+from .summarizer_agent import SummarizerAgent
 from .classifier_agent import ClassifierAgent
 from utils.logger import get_logger
 
@@ -22,31 +24,56 @@ class OrchetratorAgent(BaseAgent):
         logger.info("OrchestratorAgent initialized with Retriever, RAG, Summarizer, and Classifier agents.")
 
     async def run(self, query: str):
-        logger.info(f"received query: '{query}'")
+        logger.info(f"[RUN] received query: '{query}'")
         try:
-            if "summarize" in query.lower():
-                logger.debug("routing query to SummarizerAgent")
-                docs = await self.retriever_agent.run(query)
+            agent, doc_needed = self._route(query=query)
+            if doc_needed:
+                docs = await self.retriever_agent.run(query=query)
                 if not docs:
-                    logger.warning(f"no documents retrieved for summarization.")
-                    return "no documents available to summarize"
-                result = await self.summarizer_agent.run(docs[0], stream=True)
-                logger.info("SummarizerAgent completed successfully")
-                return result
-            elif "classify" in query.lower():
-                logger.debug("routing query to ClassifierAgent")
-                docs = await self.retriever_agent.run(query)
-                if not docs:
-                    logger.warning(f"no documents retrieved for classification.")
-                    return "no documents available to classify"
-                result = await self.classifier_agent.run(docs[0], stream=True)
-                logger.info("ClassifierAgent completed successfully")
-                return result
+                    logger.warning(f"[RUN] no documents retrieved for {agent.__class__.__name__}")
+                    return f"no documents available to {agent.name.lower()}"
+                result = await agent.run(docs[0])
             else:
-                logger.debug("routing query to ResponseAgent (RAG)")
-                result = await self.rag_agent.run(query, stream=True)
-                logger.info("ResponseAgent (RAG) completed successfully")
-                return result
+                result = await agent.run(query)
+                
+            logger.info(f"[RUN] {agent.name} completed successfully")
+            return result
         except Exception as e:
-            logger.error(f"error while processing query '{query}': {e}", exc_info=True)
+            logger.error(f"[RUN] error while processing query '{query}': {e}", exc_info=True)
             return f"an error occurred while handling the query: {e}"
+    
+    async def stream(self, query: str) -> AsyncGenerator[Union[str, Dict[str, str], List[Any]], None]:
+        logger.info(f"[STREAM] received query: '{query}'")
+        try:
+            agent, doc_needed = self._route(query=query)
+            if doc_needed:
+                docs = await self.retriever_agent.run(query=query)
+                if not docs:
+                    logger.warning(f"[STREAM] no documents retrieved for {agent.__class__.__name__}")
+                    yield f"no documents available to {agent.name.lower()}"
+                    return
+                async for chunk in agent.stream(docs[0]):
+                    yield chunk
+            else:
+                async for chunk in agent.stream(query):
+                    yield chunk
+            logger.info(f"[STREAM] {agent.name} completed successfully")
+        except Exception as e:
+            logger.error(f"[STREAM]] error processing query '{query}': {e}", exc_info=True)
+            yield f"an error occurred handling the query: {e}"
+
+    def _route(self, query: str):
+        """
+        Determines which agent to use based on the query.
+        Returns a tuple: (agent_instance, needs_document: bool)
+        """
+        query_lower = query.lower()
+        if "summarize" in query_lower:
+            logger.debug("[ROUTE] Routing to SummarizerAgent")
+            return self.summarizer_agent, True
+        elif "classify" in query_lower:
+            logger.debug("[ROUTE] Routing to ClassifierAgent")
+            return self.classifier_agent, True
+        else:
+            logger.debug("[ROUTE] Routing to ResponseAgent (RAG)")
+            return self.rag_agent, False

@@ -1,3 +1,4 @@
+from typing import AsyncGenerator
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -36,20 +37,26 @@ class ResponseAgent(BaseAgent):
         )
         logger.info("ResponseAgent initialized with provided LLM and retriever")
 
-    async def run(self, query: str, stream: bool = False):
-        logger.info(f"ResponseAgent running query with stream {stream}: '{query}'")
+    async def run(self, query: str):
+        logger.info(f"[RUN] received query: '{query}'")
         try:
-            if stream:
-                result = ""
-                async for chunk in self.chain.astream(query):
-                    print(chunk, end="", flush=True)
-                    result += chunk
-                print()
-                logger.info(f"successfully generated a response")
-                return result
-            else:
-                logger.info(f"successfully generated a response")
-                return await self.chain.ainvoke(query)    
+            result = await self.chain.ainvoke(query)
+            logger.info(f"[RUN] successfully generated a response")
+            return {
+                "type": "response",
+                "content": result,
+                "metadata": {"model": getattr(self.chain, "llm_name", "unknown")}
+            }
         except Exception as e:
-            logger.error(f"failed on query '{query}': {e}", exc_info=True)
-            raise
+            logger.error(f"[RUN] failed on query '{query}': {e}", exc_info=True)
+            return {"type": "response", "content": "error: failed to respond", "metadata": {}}
+    
+    async def stream(self, query: str) -> AsyncGenerator[dict, None]:
+        logger.info(f"[STREAM] received query: '{query}'")
+        try:
+            async for chunk in self.chain.astream(query):
+                yield {"type": "response", "content": chunk, "metadata": {}}
+            logger.info(f"[STREAM] successfully generated a response")
+        except Exception as e:
+            logger.error(f"[STREAM] failed on query '{query}': {e}", exc_info=True)
+            yield {"type": "response", "content": "error: failed to respond", "metadata": {}}
